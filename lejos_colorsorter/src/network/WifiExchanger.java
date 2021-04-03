@@ -19,5 +19,10 @@ public class WifiExchanger implements NetworkInterface{
 		
 	}
 
+	public void sendString(String message) throws IOException {
+		// TODO Auto-generated method stub
+		
+	}
+
 
 }

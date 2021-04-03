@@ -38,4 +38,8 @@ public class BluetoothExchanger implements NetworkInterface {
 		outputStream.write(data, 0, 8);
 	}
 
+	/* TODO update random 8 coming from nowhere */
+	public void sendString(String message) throws IOException {
+		outputStream.writeBytes(message);
+	}
 }

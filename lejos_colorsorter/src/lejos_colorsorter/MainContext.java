@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 
 import lejos.hardware.lcd.LCD;
+import lejos.utility.Delay;
 import network.BluetoothExchanger;
 import network.NetworkInterface;
 import network.WifiExchanger;
@@ -22,31 +23,35 @@ public class MainContext {
 	/* action id -1 means exit */
 	static int actionId;
 
-	/* Is everything really need to be static */
 	public static void main(String[] args) {
 		LCD.setAutoRefresh(true);
 
-		chooseNetworkMode();
-		displayKeyCode();
-		user_connected = networkExchanger.connect();
+		// No program output, if the client is disconnected we wait for an other one
+		while (true) {
+			actionId = 0;
+			chooseNetworkMode();
+			displayKeyCode();
+			user_connected = networkExchanger.connect();
 
-		ev3Controller = new Ev3Controller();
-		ev3Controller.playSound("success");
-
-		actionId = 0;
-
-		new Thread(new manageInputThread()).start();
-
-		processLiveAction();
+			ev3Controller = new Ev3Controller();
+			ev3Controller.playSound("success");
+			new Thread(new manageInputThread()).start();
+			processLiveAction();
+			Delay.msDelay(300); // Wait for all thread to end
+			ev3Controller.close();
+		}
 	}
 
 	private static void processLiveAction() {
 		while (actionId != 1) {
 			switch (actionId) {
-			
-			case 1:   // 
-				break;
 
+			case 1: // Sort all
+				if (ev3Controller.inAction) {
+					boolean success = ev3Controller.sortAllBricksOnSlide();
+					sendData(String.valueOf(success));
+				}
+				break;
 			}
 		}
 
@@ -68,13 +73,12 @@ public class MainContext {
 		}
 	}
 
-	private void sendData() {
+	/* TODO Bof format pas terrible */
+	private static void sendData(String message) {
 		while (actionId != 1) {
 
 			try {
-				byte[] data = new byte[8];
-				data[0] = 99;
-				networkExchanger.send(data);
+				networkExchanger.sendString(message);
 			} catch (IOException ioe) {
 				ioe.printStackTrace();
 			}
@@ -95,6 +99,7 @@ public class MainContext {
 	 * press
 	 */
 	static void chooseNetworkMode() {
+		LCD.clear();
 		LCD.drawString("Welcome!", 0, 1);
 
 		String mode = true ? "WIFI" : "BT";

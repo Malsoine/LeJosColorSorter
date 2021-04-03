@@ -1,6 +1,5 @@
 package components;
 
-import java.util.Arrays;
 import java.util.List;
 
 import lejos.hardware.ev3.LocalEV3;
@@ -8,24 +7,37 @@ import lejos.hardware.motor.EV3MediumRegulatedMotor;
 
 public class Conveyor {
 
-	/* TODO pass this as arg in case it changes */
-	static final List BUCKETCOLORMAPPING = Arrays.asList(new String[] { "Blue", "Yellow", "Red", "Green", "Trash" });
+	List bucketColorMapping;
 
 	EV3MediumRegulatedMotor conveyerMotor;
 
 	TouchSensor touchSensor;
 
-	public Conveyor(String port, String portTouchSensor) {
+	public Conveyor(String port, String portTouchSensor, List bucketColorMapping) {
 		conveyerMotor = new EV3MediumRegulatedMotor(LocalEV3.get().getPort(port));
 		touchSensor = new TouchSensor(portTouchSensor);
+		this.bucketColorMapping = bucketColorMapping;
 	}
 
 	/*
 	 * TODO fix arbitrary 110
 	 */
-	public void move(String color) {
-		resetPosition();
-		conveyerMotor.rotate(BUCKETCOLORMAPPING.indexOf(color) * 110);
+	public boolean move(String color) {
+		boolean success = true;
+		if(!bucketColorMapping.contains(color)) {  // Test for valid color
+			success = false;
+		}
+		
+		if(success) {
+			try {
+				resetPosition();
+				conveyerMotor.rotate(bucketColorMapping.indexOf(color) * 110);
+			} catch (Exception e) {
+				success = false;
+			}			
+		}
+
+		return success;
 	}
 
 	public void resetPosition() {
