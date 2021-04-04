@@ -16,30 +16,24 @@ public class BluetoothExchanger implements NetworkInterface {
 
 	DataInputStream inputStream;
 	DataOutputStream outputStream;
-	
 
-	/* TODO update return */
+	/* TODO update return / handle no connection */
 	public boolean connect() {
 		connector = (BTConnector) Bluetooth.getNXTCommConnector();
 		connection = (BTConnection) connector.waitForConnection(60000, NXTConnection.RAW);
-		
+
 		inputStream = connection.openDataInputStream();
 		outputStream = connection.openDataOutputStream();
 		return true;
 	}
 
-	public int listen() throws IOException {
-		return (int) inputStream.readByte();
+	public byte[] listen() throws IOException {
+		return inputStream.readAllBytes();
 
 	}
 
-	/* TODO update random 8 coming from nowhere */
 	public void send(byte[] data) throws IOException {
-		outputStream.write(data, 0, 8);
+		outputStream.write(data, 0, data.length);
 	}
 
-	/* TODO update random 8 coming from nowhere */
-	public void sendString(String message) throws IOException {
-		outputStream.writeBytes(message);
-	}
 }
