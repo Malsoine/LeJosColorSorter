@@ -9,6 +9,7 @@ import components.ColorReader;
 import components.Conveyor;
 import components.Slide;
 import lejos.hardware.Sound;
+import log_manager.LogFileManager;
 
 public class Ev3Controller {
 
@@ -19,14 +20,22 @@ public class Ev3Controller {
 						// been great but again JRE restriction
 
 	// Mapping stored here for compliance and coherence
-	static final List BUCKETCOLORMAPPING = Arrays.asList(new String[] { "Blue", "Yellow", "Red", "Green" });
+	public static final List BUCKETCOLORMAPPING = Arrays.asList(new String[] { "Blue", "Yellow", "Red", "Green" });
 
 	ColorReader colorReader;
 	Conveyor conveyor;
 	Slide slide;
 
-	public Ev3Controller() {
+	LogFileManager logManager;
+
+	public Ev3Controller(LogFileManager logManager) {
 		slideBricks = new ArrayList();
+		slideBricks.add("Red");
+		slideBricks.add("Yellow");
+		slideBricks.add("Red");
+
+		this.logManager = logManager;
+
 		inAction = false;
 
 		// Port mapping is made here
@@ -46,21 +55,65 @@ public class Ev3Controller {
 		return f.canRead() && Sound.playSample(f) >= 0;
 	}
 
-	boolean sortAllBricksOnSlide() {
+	byte[] sortAllBricksOnSlide() {
 		inAction = true;
+		byte[] sortedBrickCount = { 0, 0, 0, 0 };
 		boolean success = true;
 		for (int i = 0; i < slideBricks.size() && success; i++) {
 			String brickColor = (String) slideBricks.get(i);
-			success = success && conveyor.move(brickColor);
-			success = success && slide.ejectOneBrick();
+			sortedBrickCount[BUCKETCOLORMAPPING.indexOf(brickColor)] += 1;
+			success &= conveyor.move(brickColor);
+			success &= slide.ejectOneBrick();
 		}
 		inAction = false;
-		return true;
+		return sortedBrickCount;
+	}
+
+	boolean startScanningProcess() {
+		return colorReader.startScanningProcess(slideBricks);
 	}
 
 	public void close() {
 		colorReader.close();
 		conveyor.close();
 		slide.close();
+	}
+
+	private int countColoredBricks(String color) {
+		int count = 0;
+		for (int i = 0; i < slideBricks.size(); i++) {
+			count += (slideBricks.get(i) == color ? 1 : 0);
+		}
+		return count;
+	}
+
+	private int getIndexForXColoredBrick(String color, int quantityAsked) {
+		// assume countColoredBricks as been called before
+		int colorCount = 0;
+		int index;
+		for (index = 0; colorCount < quantityAsked; index++) {
+			colorCount += (slideBricks.get(index) == color ? 1 : 0);
+		}
+		return index;
+	}
+
+	public byte[] sortUntilXColoredBrickSorted(String color, byte quantityAsked) {
+		int count = countColoredBricks(color);
+		boolean success = count >= quantityAsked;
+		byte[] sortedBrickCount = { 0, 0, 0, 0 };
+		if (success) { // return success ? 
+			inAction = true;
+			for (int i = 0; i < getIndexForXColoredBrick(color, quantityAsked) && success; i++) {
+				String brickColor = (String) slideBricks.get(i);
+				sortedBrickCount[BUCKETCOLORMAPPING.indexOf(brickColor)] += 1;
+				success &= conveyor.move(brickColor);
+				success &= slide.ejectOneBrick();
+			}
+			inAction = false;
+		} else {
+			logManager.addLog(
+					"Asking to sort too much of " + color + ". Asking " + (int) quantityAsked + " while ther is only " + count);
+		}
+		return sortedBrickCount;
 	}
 }

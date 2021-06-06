@@ -26,7 +26,7 @@ public class ColorReader {
 		colorSample = new float[colorProvider.sampleSize()];
 	}
 
-	public void startScanningProcess(ArrayList brickSlide) {
+	public boolean startScanningProcess(ArrayList brickSlide) {
 		/**/
 		while (brickSlide.size() < 8 && Button.ENTER.isUp()) {
 			LCD.clear();
@@ -48,6 +48,7 @@ public class ColorReader {
 			}
 			Delay.msDelay(750);
 		}
+		return true;
 	}
 	
 	public void close() {

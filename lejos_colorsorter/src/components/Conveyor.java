@@ -20,24 +20,12 @@ public class Conveyor {
 	}
 
 	/*
-	 * TODO fix arbitrary 110
+	 * TODO fix more or less arbitrary 110
 	 */
 	public boolean move(String color) {
-		boolean success = true;
-		if(!bucketColorMapping.contains(color)) {  // Test for valid color
-			success = false;
-		}
-		
-		if(success) {
-			try {
-				resetPosition();
-				conveyerMotor.rotate(bucketColorMapping.indexOf(color) * 110);
-			} catch (Exception e) {
-				success = false;
-			}			
-		}
-
-		return success;
+		resetPosition();
+		conveyerMotor.rotate(bucketColorMapping.indexOf(color) * 110);
+		return true;
 	}
 
 	public void resetPosition() {

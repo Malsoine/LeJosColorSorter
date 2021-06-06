@@ -1,5 +1,6 @@
 package lejos_colorsorter;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
 
@@ -13,7 +14,7 @@ import network.WifiExchanger;
 
 public class MainContext {
 
-	final static int KEY_CODE = generateRadomKEY_CODE();
+	final static String KEY_CODE = generateRandomKEY_CODE();
 
 	static boolean user_connected;
 	static boolean isWifiselected;
@@ -34,7 +35,7 @@ public class MainContext {
 		logManager.addLog("Programm starting");
 
 		// No program output, if the client is disconnected we wait for an other one
-		while (true) {
+		while (actionId == 0) { // test exit first run
 			actionId = 0;
 			user_connected = false;
 			isWifiselected = true;
@@ -42,46 +43,79 @@ public class MainContext {
 			chooseNetworkMode();
 			displayKeyCode();
 			user_connected = networkExchanger.connect();
-			logManager.addLog("User connected"); // TODO Ensure true ?
+			logManager.addLog("User connected");
 
-			ev3Controller = new Ev3Controller();
+			ev3Controller = new Ev3Controller(logManager);
 
 			new Thread(new manageInputThread()).start();
 			processLiveAction();
 			Delay.msDelay(500); // Wait for all thread to end
 			ev3Controller.close();
 		}
+		logManager.addLog("Programm stoping");
 	}
 
 	private static void processLiveAction() {
 		boolean success;
+		byte[] result;
 		logManager.addLog("Start processing instructions");
 
 		while (actionId != -1) { // action id -1 means exit
-			switch (actionId) {
+			logManager.addLog("actionId is " + actionId);
 
+			switch (actionId) {
 			case 1: // Connection
 				if (!user_connected) {
 					LCD.clear();
-					success = input[1] == KEY_CODE;
-					if (success) {
-						LCD.drawString(" Connection: ok", 0, 2);
+					logManager.addLog("Start connecting");
+					if (validateReceivedKeyCode()) {
+						LCD.drawString("Connection: ok", 0, 2);
 						ev3Controller.playSound("success");
+						user_connected = true;
 					} else {
-						LCD.drawString(" Connection: ko", 0, 2);
+						LCD.drawString("Connection: ko", 0, 2);
 						ev3Controller.playSound("error");
 					}
 				}
 				break;
+
 			case 2: // Sort all
-				if (ev3Controller.inAction) {
-					success = ev3Controller.sortAllBricksOnSlide();
+				logManager.addLog("Start sorting all bricks on slide");
+				if (!ev3Controller.inAction /* && user_connected */) {
+					result = ev3Controller.sortAllBricksOnSlide();
+					sendData(true, result);
+				}
+				break;
+
+			case 3: // Add brick to the slide
+				logManager.addLog("Start adding bricks to the slide");
+				if (!ev3Controller.inAction /* && user_connected */) {
+					success = ev3Controller.startScanningProcess();
 					sendData(success, null);
+				}
+				break;
+
+			case 4: // Add brick to the slide
+				logManager.addLog("Start adding bricks to the slide");
+				if (!ev3Controller.inAction /* && user_connected */) {
+					result = ev3Controller.sortUntilXColoredBrickSorted(
+							(String) Ev3Controller.BUCKETCOLORMAPPING.get(input[1]), input[2]);
+					sendData(true, result);
 				}
 				break;
 			}
 		}
 		logManager.addLog("Stop processing instructions");
+	}
+
+	private static boolean validateReceivedKeyCode() {
+		boolean isValid = true;
+		for (int i = 0; i < KEY_CODE.length(); i++) {
+			// input[0] is actionId
+			isValid &= input[i + 1] == Byte.parseByte(KEY_CODE.charAt(i) + "");
+		}
+		logManager.addLog("Received key_code is " + (isValid ? "valid" : "invalid"));
+		return isValid;
 	}
 
 	/* */
@@ -93,42 +127,54 @@ public class MainContext {
 		public void run() {
 			while (actionId != -1) {
 				try {
-					byte[] tempInput = networkExchanger.listen();
-					logManager.addLog("Received " + tempInput); // byte array to string ?
+					// byte[] tempInput = networkExchanger.listen();
+					byte[] tempInput = { 4, 0, 2 };
 
-					if (validateInputForm(tempInput)) {
+					logManager.addLog("Received a command " + byteArrayToNiceString(tempInput));
+
+					if (tempInput != null && validateInputForm(tempInput)) {
 						input = tempInput;
 						actionId = (int) input[0];
-						logManager.addLog("Updated input with" + input);// byte array to string ?
+						logManager.addLog("Updated input with " + byteArrayToNiceString(input));
 					}
+					File f = new File("dddd");
+					f.createNewFile();
 				} catch (IOException ioe) {
 					ioe.printStackTrace();
 				}
+				actionId = -1;
 			}
 			logManager.addLog("Stop listening to instructions");
 		}
 
-		private boolean validateInputForm(byte[] tempInput) {
+		private static boolean validateInputForm(byte[] tempInput) {
 			int tempActionId = tempInput[0];
 			boolean success = true;
 			switch (tempActionId) {
 
 			case 1:
-				// connection - Should be [actionId, keycode]
-				success = tempInput.length == 2;
+				// connection - Should be [actionId, **keycode]
+				success = tempInput.length == 5;
 				break;
 			case 2:
+			case 3:
 				// sort all - Should be [actionId]
 				success = tempInput.length == 1;
 				break;
+			case 4:
+				// sort all - Should be [actionId, color index, number]
+				// As there is two brick of each color the max number is 2
+				// and color should be in the four available ones
+				success = tempInput.length == 3 && tempInput[1] < Ev3Controller.BUCKETCOLORMAPPING.size()
+						&& tempInput[2] <= 2;
+				break;
 			}
-			String isValid = success ? "valid" : "invalid";
-			logManager.addLog("Command " + tempInput + " is " + isValid);// byte array to string ?
+			logManager.addLog("Command " + byteArrayToNiceString(tempInput) + " is " + (success ? "valid" : "invalid"));
 			return success;
 		}
 	}
 
-	private static void sendData(boolean success, int[] params) {
+	private static void sendData(boolean success, byte[] params) {
 		int paramsSize;
 		if (params == null) {
 			paramsSize = 0;
@@ -137,13 +183,13 @@ public class MainContext {
 		}
 
 		try {
+			// Form array {success, params0, params1, ...}
 			byte[] data = new byte[paramsSize + 1];
 			data[0] = (byte) (success ? 1 : 0);
-			for (int i = 0; i < paramsSize; i++) {
-				data[i + 1] = (byte) params[i];
-			}
+			System.arraycopy(params, 0, data, 1, params.length);
+
+			logManager.addLog("Sending " + byteArrayToNiceString(data));
 			networkExchanger.send(data);
-			logManager.addLog("Sent " + data);// byte array to string ?
 		} catch (IOException ioe) {
 		}
 	}
@@ -151,10 +197,10 @@ public class MainContext {
 	/*
 	 * Generate a 4 digit number between 0000 and 9999
 	 */
-	static int generateRadomKEY_CODE() {
+	static String generateRandomKEY_CODE() {
 		int number = (int) (Math.random() * 9999);
 		DecimalFormat decimalFormat = new DecimalFormat("0000");
-		return Integer.parseInt(decimalFormat.format(number));
+		return decimalFormat.format(number);
 	}
 
 	/*
@@ -165,10 +211,10 @@ public class MainContext {
 		while (Button.ENTER.isUp()) { // Validate mode on middle button press
 			if (Button.DOWN.isDown()) { // Swap mode on press of up or down arrows
 				isWifiselected = false;
-				ev3Controller.playSound("success");
+				// ev3Controller.playSound("success");
 			} else if (Button.UP.isDown()) {
-				isWifiselected = false;
-				ev3Controller.playSound("success");
+				isWifiselected = true;
+				// ev3Controller.playSound("success");
 			}
 
 			LCD.clear();
@@ -182,14 +228,14 @@ public class MainContext {
 			Delay.msDelay(150);
 		}
 
-		ev3Controller.playSound("success"); // Acknowledge choice made
+		// ev3Controller.playSound("success"); // Acknowledge choice made
 		if (isWifiselected) {
 			networkExchanger = new WifiExchanger();
 		} else {
 			networkExchanger = new BluetoothExchanger();
 		}
-		String networkChosen = isWifiselected ? "Wifi" : "Bluetooth";
-		logManager.addLog("User selected " + networkChosen);
+		logManager.addLog("User selected " + (isWifiselected ? "Wifi" : "Bluetooth"));
+		LCD.clear();
 	}
 
 	/*
@@ -198,6 +244,15 @@ public class MainContext {
 	static void displayKeyCode() {
 		logManager.addLog("This time the key_code is " + KEY_CODE);
 		LCD.drawString("key_code : " + KEY_CODE, 0, 2);
+	}
+
+	static String byteArrayToNiceString(byte[] array) {
+		String display = "[";
+		for (int i = 0; i < array.length; i++) {
+			display += array[i] + ",";
+		}
+		display = display.substring(0, display.length() - 1);
+		return display + "]";
 	}
 
 }
