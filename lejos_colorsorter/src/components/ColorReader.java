@@ -27,8 +27,8 @@ public class ColorReader {
 		colorSample = new float[colorProvider.sampleSize()];
 	}
 
+	/* Allow user to manually add bricks to the slide */
 	public boolean startScanningProcess(ArrayList brickSlide) {
-		/**/
 		while (brickSlide.size() < Ev3Controller.MAXIMUM_BRICK_IN_SLIDE && Button.ENTER.isUp()) {
 			LCD.clear();
 			LCD.drawString("Scannez ici", 0, 0);

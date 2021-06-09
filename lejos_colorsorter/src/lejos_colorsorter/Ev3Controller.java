@@ -10,6 +10,7 @@ import components.Conveyor;
 import components.Slide;
 import lejos.hardware.Sound;
 import log_manager.LogFileManager;
+import test.WorflowManagerTest;
 
 public class Ev3Controller {
 
@@ -99,7 +100,7 @@ public class Ev3Controller {
 	 */
 	public boolean startScanningProcess() {
 		boolean success = colorReader.startScanningProcess(slideBricks);
-		if (slideBricks.size() == ColorReader.MAXIMUM_BRICK_IN_SLIDE) {
+		if (slideBricks.size() == MAXIMUM_BRICK_IN_SLIDE) {
 			LogFileManager.addLog("Slide is now full of bricks");
 		} else {
 			LogFileManager.addError("There is currently " + slideBricks.size() + " bricks in the slide");
@@ -216,7 +217,7 @@ public class Ev3Controller {
 	String getBucketRepartition(byte[] bucketRepartition) {
 		String res = "{";
 		for (int i = 0; i < BUCKETCOLORMAPPING.size(); i++) {
-			res += '"' + (String) BUCKETCOLORMAPPING.get(0) + "': " + bucketRepartition[0] + ",";
+			res += '"' + (String) BUCKETCOLORMAPPING.get(i) + "\": " + bucketRepartition[i] + ",";
 		}
 		res = res.substring(0, res.length() - 1) + "}";
 		LogFileManager.addLog("Formatted json is " + res);

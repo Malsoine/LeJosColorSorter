@@ -44,7 +44,6 @@ public class WifiExchanger extends AbstractNetwork {
 
 				while (!server.isClosed() && !forceQuit) {
 					client = server.accept();
-					output = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
 
 					LogFileManager.addLog("Device connected");
 
@@ -65,7 +64,6 @@ public class WifiExchanger extends AbstractNetwork {
 				LogFileManager.addLog("Stopping Wifi socket with client");
 				listener.communicate("{\"action\": \"stop\"}");
 
-				client.close();
 				server.close();
 				LCD.clear();
 				LCD.drawString("Device deconnected", 2, 2);
@@ -81,6 +79,7 @@ public class WifiExchanger extends AbstractNetwork {
 
 	public void send(String data) {
 		try {
+			output = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
 			output.write(data);
 			output.flush();
 		} catch (IOException e) {

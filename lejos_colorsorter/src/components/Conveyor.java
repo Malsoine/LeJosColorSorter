@@ -19,11 +19,11 @@ public class Conveyor {
 	}
 
 	/*
-	 * TODO fix more or less arbitrary 110
+	 * TODO fix more or less arbitrary 115
 	 */
 	public boolean move(int bucketIndex) {
 		resetPosition();
-		conveyerMotor.rotate(bucketIndex * 110);
+		conveyerMotor.rotate(bucketIndex * 115);
 		return true;
 	}
 
