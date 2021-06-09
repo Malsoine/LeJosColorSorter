@@ -11,14 +11,14 @@ import java.util.Date;
 
 public class LogFileManager {
 
-	File logFile;
-	FileOutputStream output;
-	PrintStream outputStream;
+	static File logFile;
+	static FileOutputStream output;
+	static PrintStream outputStream;
 
-	final String FILE_PATH = "journal.log";
-	final DateFormat DATE_FORMAT = new SimpleDateFormat("hh:mm:ss dd/MM/yyyy");
+	static final String FILE_PATH = "journal.log";
+	static final DateFormat DATE_FORMAT = new SimpleDateFormat("hh:mm:ss dd/MM/yyyy");
 
-	public LogFileManager() {
+	public static void start() {
 		try {
 			logFile = new File(FILE_PATH);
 			logFile.createNewFile(); // Create if not exists
@@ -28,20 +28,25 @@ public class LogFileManager {
 		}
 	}
 	
-	public void addLog(String message) {
+	public static void addError(String message) {
+		//Displaying an arrow to highlight the issue in log file
+		outputStream.print("-> " +getCurrentDate() + " " + message + "!\n");
+	}
+	
+	public static void addLog(String message) {
 		addLog(message, "\n");
 	}
 	
-	public void addLog(String message, String endChar) {
+	public static void addLog(String message, String endChar) {
 		outputStream.print(getCurrentDate() + " " + message + endChar);
 	}
 
-	String getCurrentDate() {
+	static String getCurrentDate() {
 		Date date = Calendar.getInstance().getTime();
 		return DATE_FORMAT.format(date);
 	}
 
-	public void close() {
+	public static void close() {
 		try {
 			outputStream.close();
 			output.close();

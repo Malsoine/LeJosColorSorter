@@ -13,18 +13,17 @@ public class Conveyor {
 
 	TouchSensor touchSensor;
 
-	public Conveyor(String port, String portTouchSensor, List bucketColorMapping) {
+	public Conveyor(String port, String portTouchSensor) {
 		conveyerMotor = new EV3MediumRegulatedMotor(LocalEV3.get().getPort(port));
 		touchSensor = new TouchSensor(portTouchSensor);
-		this.bucketColorMapping = bucketColorMapping;
 	}
 
 	/*
 	 * TODO fix more or less arbitrary 110
 	 */
-	public boolean move(String color) {
+	public boolean move(int bucketIndex) {
 		resetPosition();
-		conveyerMotor.rotate(bucketColorMapping.indexOf(color) * 110);
+		conveyerMotor.rotate(bucketIndex * 110);
 		return true;
 	}
 

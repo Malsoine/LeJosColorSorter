@@ -33,7 +33,7 @@ public class Slide {
 		} catch (Exception e) {
 			success = false;
 		}
-		if (success) {  // If rotation failed we don't try to rotate back 
+		if (success) { // If rotation failed we don't try to rotate back
 			try {
 				slideMotor.rotate(180);
 				pointingUp = false;
