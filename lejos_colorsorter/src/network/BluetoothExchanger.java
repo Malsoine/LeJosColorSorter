@@ -40,11 +40,15 @@ public class BluetoothExchanger extends AbstractNetwork {
 		try {
 			outputStream.writeChars(data);
 		} catch (IOException e) {
-			StringWriter writer = new StringWriter();
-			PrintWriter printWriter = new PrintWriter(writer);
-			e.printStackTrace(printWriter);
-			LogFileManager.addError(writer.toString());
+			handleException(e)
 		}
 	};
+	   // Méthode pour gérer les exceptions
+    private void handleException(IOException e) {
+        StringWriter writer = new StringWriter();
+        PrintWriter printWriter = new PrintWriter(writer);
+        e.printStackTrace(printWriter);
+        LogFileManager.addError(writer.toString());
+    }
 
 }
