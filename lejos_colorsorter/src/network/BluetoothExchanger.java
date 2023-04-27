@@ -22,14 +22,22 @@ public class BluetoothExchanger extends AbstractNetwork {
 
 	public void start(Communicative listener) {
 		super.start(listener);
-
 		connector = (BTConnector) Bluetooth.getNXTCommConnector();
-		System.out.println("not connected");
+		LCD.clear();
+		LCD.drawString("En attente de connexion ", 5, 5);
 		connection = (BTConnection) connector.waitForConnection(60000, NXTConnection.RAW);
+		Delay.msDelay(300);
+		LCD.clear();
+		LCD.drawString("Connexion établie ", 5, 5);
 		System.out.println("connected");
 
+	try {
 		inputStream = connection.openDataInputStream();
 		outputStream = connection.openDataOutputStream();
+	} catch (IOException e) {
+        handleException(e);
+    	}
+		
 	}
 
 	public boolean connected() {
