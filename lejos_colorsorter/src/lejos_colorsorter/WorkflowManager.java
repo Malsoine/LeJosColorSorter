@@ -24,9 +24,11 @@ public class WorkflowManager implements Communicative {
 
 	static boolean userConnected;
 	static boolean isWifiselected;
+	static boolean inMenuBT;
+	static boolean quitter = false;
 
 	static Ev3Controller ev3Controller;
-	static AbstractNetwork networkExchanger;
+	static AbstractNetwork network;
 
 	static String action = "";
 
@@ -36,33 +38,100 @@ public class WorkflowManager implements Communicative {
 	}
 
 	public void start() {
-		// No program output, if the client is disconnected we wait for an other one
-		while (true) {
-			action = "";
-			userConnected = false;
-			isWifiselected = true;
+		try {
+			while (!quitter) {
+				network = null;
+				userConnected = false;
+				isWifiselected = true;
+				action = "";
+				ev3Controller = null;
+				
+				ev3Controller = new Ev3Controller();
+				new Thread(new exitButtonListener()).start();
+				chooseNetworkMode();
+				if (quitter) {
+					LogFileManager.addLog("User press exit button");
+					LogFileManager.addLog("Force exit the software");
+					quitter = true;
+					LCD.drawString("En attente de", 0, 4);
+					LCD.drawString("l arret du reseau", 0, 5);
+					return;
+				}
 
-			chooseNetworkMode();
-			displayKeyCode();
+			//	displayKeyCode();
+				//LogFileManager.addLog((isWifiselected ? "Wifi" : "Bluetooth") + " starting");
+				network.start(this);
+				LCD.drawString("En attente", 0, 4);
+				LCD.drawString("de connection", 0, 5);
+				LCD.drawString("ï¿½ l'EV3", 0, 6);
+				LCD.clear();
 
-			ev3Controller = new Ev3Controller();
-			new Thread(new exitButtonListener()).start();
+				int data = 0;
+				byte donnee = (byte) data;				
+				
+				while (!(data==10)) {
+					LCD.clear();
+					LCD.drawString("En attente", 0, 4);
 
-			LogFileManager.addLog((isWifiselected ? "Wifi" : "Bluetooth") + " starting");
-			networkExchanger.start(this);
+					donnee = network.read();
+					data = (int) donnee;
+					switch(data) {
+					case 1 :	//Scan des briques
+						LCD.clear();
+						LCD.drawString("Scan", 0, 4);
+						ev3Controller.startScanningProcess();
+						LCD.drawString("Fin scan", 0, 5);
+						Delay.msDelay(750);
+						break;
+					case 2:
+						LCD.clear();
+						LCD.drawString("Bleu : "+(int)ev3Controller.repart[0],0,3);
+						LCD.drawString("Jaune : "+(int)ev3Controller.repart[1],0,4);
+						LCD.drawString("Rouge :"+(int)ev3Controller.repart[2],0,5);
+						LCD.drawString("Vert :"+(int)ev3Controller.repart[3],0,6);						
+						Delay.msDelay(2500);
+						break;
+					case 3 :	//Trier tout
+						LCD.clear();
+						LCD.drawString("Tri des piï¿½ces", 0, 4);
+						ev3Controller.sortAllBricksOnSlide();
+						LCD.drawString("Fin tri", 0, 5);
+						Delay.msDelay(750);
 
-			LCD.drawString("En attente", 0, 4);
-			LCD.drawString("de connection", 0, 5);
-			LCD.drawString("à l'EV3", 0, 6);
+						break;
+					case 5 :	//Update du slide
+						LCD.drawString("MAJ Slide", 0, 4);
+						ev3Controller.updateSlideBrick(ev3Controller.slideBricks);
+						LCD.drawString("Fin MAJ", 0, 5);
+						Delay.msDelay(750);
+						break;
+					case 4 :	//Jeter tout ï¿½ la poubelle
+						LCD.drawString("Poubelle", 0, 4);
+						ev3Controller.ejectToTrash();
+						LCD.drawString("Fin poubelle", 0, 5);
+						Delay.msDelay(750);
+						break;
+					default :
+						break;
+					}
+					Delay.msDelay(250);
 
-			while (!action.equals("stop")) {
-				Delay.msDelay(250);
+					
+				}
+				LCD.clear();
+				LCD.drawString("FIN ", 0, 3);
+				LogFileManager.addLog("User asked to stop");
+
+				Delay.msDelay(1000); // Wait for all thread to end
+				ev3Controller.close();
 			}
-			LogFileManager.addLog("User asked to stop");
-
-			Delay.msDelay(1000); // Wait for all thread to end
-			ev3Controller.close();
+		} catch (Exception e) {
+			StringWriter writer = new StringWriter();
+			PrintWriter printWriter = new PrintWriter(writer);
+			e.printStackTrace(printWriter);
+			LogFileManager.addError(writer.toString());
 		}
+
 	}
 
 	JsonObject decodeJson(String message) {
@@ -113,7 +182,7 @@ public class WorkflowManager implements Communicative {
 			LogFileManager.addLog("Start adding bricks to the slide");
 			if (!ev3Controller.inAction && userConnected) {
 				LCD.clear();
-				LCD.drawString("Mise à jour ", 0, 1);
+				LCD.drawString("Mise Ã  jour ", 0, 1);
 				LCD.drawString("manuelle des", 0, 2);
 				LCD.drawString("briques demandees", 0, 3);
 				ev3Controller.startScanningProcess();
@@ -147,7 +216,7 @@ public class WorkflowManager implements Communicative {
 			if (!ev3Controller.inAction && userConnected) {
 				LCD.clear();
 				LCD.drawString("Envoie des briques", 0, 1);
-				LCD.drawString("à la poubelle", 0, 2);
+				LCD.drawString("Ã  la poubelle", 0, 2);
 				result = ev3Controller.ejectToTrash();
 				sendData(ev3Controller.success, result);
 			}
@@ -156,7 +225,7 @@ public class WorkflowManager implements Communicative {
 			LogFileManager.addLog("Update slide brick repartition");
 			if (!ev3Controller.inAction && userConnected) {
 				LCD.clear();
-				LCD.drawString("Mise à jour ", 0, 1);
+				LCD.drawString("Mise Ã  jour ", 0, 1);
 				LCD.drawString("automatique des", 0, 2);
 				LCD.drawString("briques demandees", 0, 3);
 				LCD.drawString(decodedMessage.get("slide").toString(), 0, 4);
@@ -177,7 +246,7 @@ public class WorkflowManager implements Communicative {
 			LCD.drawString("Demande de ", 0, 1);
 			LCD.drawString("deconnection", 0, 2);
 			LCD.drawString("recue", 0, 3);
-			networkExchanger.forceQuit = true;
+			network.forceQuit = true;
 			ev3Controller.success = true;
 
 		} else {
@@ -278,7 +347,7 @@ public class WorkflowManager implements Communicative {
 	private static void sendData(boolean success, String formattedJson) {
 		formattedJson = uglyFormatJson(success, formattedJson);
 		LogFileManager.addLog("Sending " + formattedJson);
-		networkExchanger.send(formattedJson);
+		network.send(formattedJson);
 	}
 
 	private static String uglyFormatJson(boolean success, String formattedJson) {
@@ -300,6 +369,7 @@ public class WorkflowManager implements Communicative {
 	 * Ask user which networking mode to use
 	 */
 	static void chooseNetworkMode() {
+		inMenuBT = true;
 		while (Button.ENTER.isUp()) { // Validate mode on middle button press
 			if (Button.DOWN.isDown()) { // Swap mode on press of up or down arrows
 				isWifiselected = false;
@@ -315,14 +385,17 @@ public class WorkflowManager implements Communicative {
 			LCD.drawString((!isWifiselected ? "->" : "  ") + " Bluetooth", 0, 3);
 			Delay.msDelay(100);
 		}
-
+	if(!quitter){
 		// ev3Controller.playSound("success"); // Acknowledge choice made
 		if (isWifiselected) {
-			networkExchanger = new WifiExchanger();
+			network = new WifiExchanger();
 		} else {
-			networkExchanger = new BluetoothExchanger();
+			network = new BluetoothExchanger();
 		}
 		LogFileManager.addLog("User selected " + (isWifiselected ? "Wifi" : "Bluetooth"));
+	}
+		inMenuBT = false;
+	
 	}
 
 	/*
@@ -352,7 +425,7 @@ public class WorkflowManager implements Communicative {
 			LCD.clear();
 			LCD.drawString("Retour au menu", 0, 0);
 			LogFileManager.addLog("User want to escape programm");
-			networkExchanger.forceQuit = true;
+			network.forceQuit = true;
 			communicate("{\"action\": \"stop\"}");
 		}
 	}
