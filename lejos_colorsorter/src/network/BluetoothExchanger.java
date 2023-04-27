@@ -51,7 +51,13 @@ public class BluetoothExchanger extends AbstractNetwork {
 			handleException(e)
 		}
 	};
-	   // Méthode pour gérer les exceptions
+	
+    // Méthode pour lire des données de la connexion Bluetooth
+    public byte read() throws IOException {
+        return inputStream.readByte();
+    }
+    
+    // Méthode pour gérer les exceptions
     private void handleException(IOException e) {
         StringWriter writer = new StringWriter();
         PrintWriter printWriter = new PrintWriter(writer);
