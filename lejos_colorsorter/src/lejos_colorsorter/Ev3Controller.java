@@ -27,7 +27,7 @@ public class Ev3Controller {
 	ColorReader colorReader;
 	Conveyor conveyor;
 	Slide slide;
-
+	byte[] contenu = { 0, 0, 0, 0 };
 	int bucketIndex;
 	public boolean success = true;
 
@@ -73,6 +73,7 @@ public class Ev3Controller {
 			success &= slide.ejectOneBrick();
 			slideBricks.remove(0);
 		}
+		contenu = sortedBrickCount;
 		inAction = false;
 		LogFileManager.addLog("Slide is now empty");
 		return getBucketRepartition(sortedBrickCount);
@@ -90,6 +91,7 @@ public class Ev3Controller {
 		while (slideBricks.size() > 0 && success) {
 			eject(sortedBrickCount, 0);
 		}
+		contenu = sortedBrickCount;
 		inAction = false;
 		LogFileManager.addLog("Slide is now empty");
 		return getBucketRepartition(sortedBrickCount);
@@ -158,6 +160,7 @@ public class Ev3Controller {
 		} else {
 			LogFileManager.addError("Their is only " + count + " " + color + "brick");
 		}
+		contenu = sortedBrickCount;
 		return getBucketRepartition(sortedBrickCount);
 	}
 
@@ -172,6 +175,7 @@ public class Ev3Controller {
 		for (int _ = 0; _ < quantityAsked && success; _++) {
 			eject(sortedBrickCount);
 		}
+		contenu = sortedBrickCount;
 		inAction = false;
 		return getBucketRepartition(sortedBrickCount);
 	}
