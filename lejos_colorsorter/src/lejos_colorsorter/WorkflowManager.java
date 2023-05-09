@@ -85,10 +85,10 @@ public class WorkflowManager implements Communicative {
 						break;
 					case 2:
 						LCD.clear();
-						LCD.drawString("Bleu : "+(int)ev3Controller.repart[0],0,3);
-						LCD.drawString("Jaune : "+(int)ev3Controller.repart[1],0,4);
-						LCD.drawString("Rouge :"+(int)ev3Controller.repart[2],0,5);
-						LCD.drawString("Vert :"+(int)ev3Controller.repart[3],0,6);						
+						LCD.drawString("Bleu : "+(int)ev3Controller.contenu[0],0,3);
+						LCD.drawString("Jaune : "+(int)ev3Controller.contenu[1],0,4);
+						LCD.drawString("Rouge :"+(int)ev3Controller.contenu[2],0,5);
+						LCD.drawString("Vert :"+(int)ev3Controller.contenu[3],0,6);						
 						Delay.msDelay(2500);
 						break;
 					case 3 :	//Trier tout
