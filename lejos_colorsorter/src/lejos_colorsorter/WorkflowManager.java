@@ -1,5 +1,7 @@
 package lejos_colorsorter;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 
@@ -93,19 +95,21 @@ public class WorkflowManager implements Communicative {
 						break;
 					case 3 :	//Trier tout
 						LCD.clear();
-						LCD.drawString("Tri des pi�ces", 0, 4);
+						LCD.drawString("Tri des pieces", 0, 4);
 						ev3Controller.sortAllBricksOnSlide();
 						LCD.drawString("Fin tri", 0, 5);
 						Delay.msDelay(750);
 
 						break;
 					case 5 :	//Update du slide
+						LCD.clear();
 						LCD.drawString("MAJ Slide", 0, 4);
 						ev3Controller.updateSlideBrick(ev3Controller.slideBricks);
 						LCD.drawString("Fin MAJ", 0, 5);
 						Delay.msDelay(750);
 						break;
-					case 4 :	//Jeter tout � la poubelle
+					case 4 :	//Jeter tout a la poubelle
+						LCD.clear();
 						LCD.drawString("Poubelle", 0, 4);
 						ev3Controller.ejectToTrash();
 						LCD.drawString("Fin poubelle", 0, 5);
