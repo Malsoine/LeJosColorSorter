@@ -9,8 +9,9 @@ import components.ColorReader;
 import components.Conveyor;
 import components.Slide;
 import lejos.hardware.Sound;
+import lejos.hardware.lcd.LCD;
 import log_manager.LogFileManager;
-import test.WorflowManagerTest;
+//import test.WorflowManagerTest;
 
 public class Ev3Controller {
 
@@ -33,9 +34,7 @@ public class Ev3Controller {
 
 	public Ev3Controller() {
 		slideBricks = new ArrayList();
-		slideBricks.add("Red");
-		slideBricks.add("Yellow");
-		slideBricks.add("Red");
+
 
 		inAction = false;
 
@@ -69,7 +68,7 @@ public class Ev3Controller {
 			bucketIndex = BUCKETCOLORMAPPING.indexOf(brickColor);
 			sortedBrickCount[bucketIndex] += 1;
 
-			success &= conveyor.move(bucketIndex);
+			success &= conveyor.move(bucketIndex + 1); //+1 car le premier bac est la poubelle
 			success &= slide.ejectOneBrick();
 			slideBricks.remove(0);
 		}
@@ -86,8 +85,7 @@ public class Ev3Controller {
 		inAction = true;
 		byte[] sortedBrickCount = { 0, 0, 0, 0 };
 		success = true;
-		System.out.println(slideBricks);
-
+		//System.out.println(slideBricks);
 		while (slideBricks.size() > 0 && success) {
 			eject(sortedBrickCount, 0);
 		}
@@ -107,6 +105,7 @@ public class Ev3Controller {
 		} else {
 			LogFileManager.addError("There is currently " + slideBricks.size() + " bricks in the slide");
 		}
+		LCD.clear();
 		return success;
 	}
 
